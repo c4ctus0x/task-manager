@@ -24,13 +24,21 @@ export const createTask = async (req: Request, res: Response) => {
 
     return res.status(201).json(savedTask);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    if (error instanceof Error) {
+      // This catches validation errors and other Mongoose errors
+      return res.status(400).json({ message: error.message });
+    }
+    // For unknown errors
+    res.status(500).json({ message: 'An unexpected error occurred' });
   }
 };
 
 export const getTask = async (req: Request, res: Response) => {
   try {
     const taskId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(taskId)) {
+      return res.status(400).json({ message: 'Invalid task ID format' });
+    }
     const task = await Task.findById(taskId);
 
     if (!task) {
@@ -39,7 +47,7 @@ export const getTask = async (req: Request, res: Response) => {
 
     res.json(task);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'An unexpected error occurred' });
   }
 };
 
@@ -48,13 +56,18 @@ export const getAllTasks = async (_req: Request, res: Response) => {
     const tasks = await Task.find();
     res.json(tasks);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'An unexpected error occurred' });
   }
 };
 
 export const updateTask = async (req: Request, res: Response) => {
   try {
     const taskId = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(taskId)) {
+      return res.status(400).json({ message: 'Invalid task ID format' });
+    }
+
     const updates: ITask = req.body;
 
     const updatedTask = await Task.findByIdAndUpdate(taskId, updates, { new: true });
@@ -65,13 +78,21 @@ export const updateTask = async (req: Request, res: Response) => {
 
     res.json(updatedTask);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    if (error instanceof mongoose.Error.ValidationError) {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ message: 'An unexpected error occurred' });
   }
 };
 
 export const deleteTask = async (req: Request, res: Response) => {
   try {
     const taskId = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(taskId)) {
+      return res.status(400).json({ message: 'Invalid task ID format' });
+    }
+
     const deletedTask = await Task.findByIdAndDelete(taskId);
 
     if (!deletedTask) {
@@ -80,6 +101,6 @@ export const deleteTask = async (req: Request, res: Response) => {
 
     res.status(204).send();
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: 'An unexpected error occurred' });
   }
 };
