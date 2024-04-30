@@ -8,16 +8,18 @@ interface ITask {
   description: string;
   dueDate: Date;
   status: 'pending' | 'in progress' | 'completed';
+  priority: 'low' | 'medium' | 'high'; // Added priority field
 }
 
 export const createTask = async (req: Request, res: Response) => {
   try {
-    const { title, description, dueDate, status }: ITask = req.body;
+    const { title, description, dueDate, status, priority }: ITask = req.body;
     const newTask = new Task({
       title,
       description,
       dueDate,
       status,
+      priority, // Saving priority
     });
 
     const savedTask = await newTask.save();
@@ -25,10 +27,8 @@ export const createTask = async (req: Request, res: Response) => {
     return res.status(201).json(savedTask);
   } catch (error) {
     if (error instanceof Error) {
-      // This catches validation errors and other Mongoose errors
       return res.status(400).json({ message: error.message });
     }
-    // For unknown errors
     res.status(500).json({ message: 'An unexpected error occurred' });
   }
 };
@@ -70,6 +70,7 @@ export const updateTask = async (req: Request, res: Response) => {
 
     const updates: ITask = req.body;
 
+    // Ensure updates include priority, if present, or retain existing value
     const updatedTask = await Task.findByIdAndUpdate(taskId, updates, { new: true });
 
     if (!updatedTask) {
