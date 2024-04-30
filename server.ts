@@ -35,7 +35,20 @@ mongoose.connect(process.env.MONGODB_URI || '', {
 
 app.get('/tasks', async (req: Request, res: Response) => {
     try {
-        const tasks = await Task.find();
+        // Check if a search query parameter is provided
+        const { search } = req.query;
+        let query = {};
+
+        if (search) {
+            query = {
+                $or: [
+                    { name: { $regex: search, $options: 'i' } },
+                    { description: { $regex: search, $options: 'i' } }
+                ]
+            };
+        }
+
+        const tasks = await Task.find(query);
         res.json(tasks);
     } catch (error) {
         res.status(500).send(error);
