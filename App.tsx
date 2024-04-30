@@ -11,12 +11,21 @@ interface AppProps {}
 const App: React.FC<AppProps> = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const tasksCacheKey = 'tasksCache';
 
   useEffect(() => {
-    fetch(`${process.env.REACT_APP_API_URL}/tasks`)
-      .then(response => response.json())
-      .then(data => setTasks(data))
-      .catch(error => console.error("Fetching tasks failed", error));
+    const cachedTasks = localStorage.getItem(tasksCacheKey);
+    if (cachedTasks) {
+      setTasks(JSON.parse(cachedTasks));
+    } else {
+      fetch(`${process.env.REACT_APP_API_URL}/tasks`)
+        .then(response => response.json())
+        .then(data => {
+          setTasks(data);
+          localStorage.setItem(tasksCacheKey, JSON.stringify(data)); // Cache fetched tasks
+        })
+        .catch(error => console.error("Fetching tasks failed", error));
+    }
   }, []);
 
   const handleNewTaskSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -24,13 +33,24 @@ const App: React.FC<AppProps> = () => {
     if (!newTaskTitle.trim()) return;
 
     const newTask: Task = {
-      id: Date.now(), 
+      id: Date.now(),
       title: newTaskTitle,
       completed: false,
     };
 
-    setTasks([...tasks, newTask]);
+    const updatedTasks = [...tasks, newTask];
+    setTasks(updatedTasks);
     setNewTaskTitle('');
+
+    // Update local storage (cache)
+    localStorage.setItem(tasksCacheKey, JSON.stringify(updatedTasks));
+
+    // For a real-world application, you'd also want to send this to your backend, e.g.:
+    // fetch(`${process.env.REACT_APP_API_URL}/tasks`, {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify(newTask),
+    // }).then(/* handle response */).catch(/* handle error */);
   };
 
   return (
