@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface Task {
   id: string;
@@ -14,8 +14,29 @@ interface TaskListProps {
 }
 
 const TaskList: React.FC<TaskListProps> = ({ tasks, onDelete, onEdit }) => {
+  const [error, setError] = useState<string | null>(null);
+
+  const handleDelete = (id: string) => {
+    try {
+      onDelete(id);
+    } catch (error: any) {
+      console.error("Failed to delete task", error);
+      setError("An error occurred when attempting to delete a task.");
+    }
+  };
+
+  const handleEdit = (id: string) => {
+    try {
+      onEdit(id);
+    } catch (error: any) {
+      console.error("Failed to edit task", error);
+      setError("An error occurred when attempting to edit a task.");
+    }
+  };
+
   return (
     <div className="task-list">
+      {error && <p className="error">{error}</p>}
       {tasks.map((task) => (
         <div
           key={task.id}
@@ -27,8 +48,8 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onDelete, onEdit }) => {
             <p>Status: {task.status}</p>
           </div>
           <div className="task-actions">
-            <button onClick={() => onEdit(task.id)}>Edit</button>
-            <button onClick={() => onDelete(task.id)}>Delete</button>
+            <button onClick={() => handleEdit(task.id)}>Edit</button>
+            <button onClick={() => handleDelete(task.id)}>Delete</button>
           </div>
         </div>
       ))}
