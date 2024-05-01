@@ -6,6 +6,12 @@ interface ITaskFormState {
   priority: 'High' | 'Medium' | 'Low';
 }
 
+// Enhancing the component to handle errors
+interface IErrorState {
+  hasError: boolean;
+  message: string;
+}
+
 const TaskForm: React.FC<{ onSave: (task: ITaskFormState) => void }> = ({ onSave }) => {
   const [formState, setFormState] = useState<ITaskFormState>({
     description: '',
@@ -13,14 +19,28 @@ const TaskForm: React.FC<{ onSave: (task: ITaskFormState) => void }> = ({ onSave
     priority: 'Medium',
   });
 
+  // State for managing error handling
+  const [error, setError] = useState<IErrorState>({ hasError: false, message: '' });
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormState({ ...formState, [name]: value });
+
+    // Reset error on input change
+    if (error.hasError) {
+      setError({ hasError: false, message: '' });
+    }
   };
 
   const validateForm = (): boolean => {
     const { description, dueDate, priority } = formState;
-    return !!description && !!dueDate && !!priority;
+    const isValid = !!description && !!dueDate && !!priority;
+
+    if (!isValid) {
+      setError({ hasError: true, message: 'Please fill in all fields correctly.' });
+    }
+
+    return isValid;
   };
 
   const handleSubmit = (e: FormEvent) => {
@@ -28,13 +48,12 @@ const TaskForm: React.FC<{ onSave: (task: ITaskFormState) => void }> = ({ onSave
     if (validateForm()) {
       onSave(formState);
       setFormState({ description: '', dueDate: '', priority: 'Medium' });
-    } else {
-      alert('Please fill in all fields.');
     }
   };
 
   return (
     <form onSubmit={handleSubmit}>
+      {error.hasError && <div style={{ color: 'red' }}>{error.message}</div>}
       <div>
         <label htmlFor="description">Description:</label>
         <input
