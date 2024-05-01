@@ -1,10 +1,12 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Model } from 'mongoose';
 
 interface ITask extends Document {
   description: string;
   dueDate: Date;
   priority: 'High' | 'Medium' | 'Low';
   isCompleted: boolean;
+  // Method signature in the interface
+  setCompleted: (this: ITask) => Promise<ITask>;
 }
 
 const TaskSchema: Schema = new Schema({
@@ -14,6 +16,16 @@ const TaskSchema: Schema = new Schema({
   isCompleted: { type: Boolean, required: true, default: false }
 });
 
-const TaskModel = mongoose.model<ITask>('Task', TaskSchema);
+// Implementing the setCompleted function
+TaskSchema.methods.setCompleted = async function(this: ITask): Promise<ITask> {
+  this.isCompleted = true;
+  return this.save();
+};
+
+interface TaskModel<T extends Document> extends Model<T> {
+  // Static methods can be declared here if needed
+}
+
+const TaskModel = mongoose.model<ITask, TaskModel<ITask>>('Task', TaskSchema);
 
 export default TaskModel;
