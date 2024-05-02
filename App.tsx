@@ -8,65 +8,65 @@ interface Task {
 
 interface AppProps {}
 
-const App: React.FC<AppProps> = () => {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-  const tasksCacheKey = 'tasksCache';
+const TaskManagerApp: React.FC<AppProps> = () => {
+  const [taskList, setTaskList] = useState<Task[]>([]);
+  const [newTaskInput, setNewTaskInput] = useState('');
+  const localStorageKey = 'taskListStorage';
 
   useEffect(() => {
-    const cachedTasks = localStorage.getItem(tasksCacheKey);
-    if (cachedTasks) {
-      setTasks(JSON.parse(cachedTasks));
+    const tasksFromStorage = localStorage.getItem(localStorageKey);
+    if (tasksFromStorage) {
+      setTaskList(JSON.parse(tasksFromStorage));
     } else {
-      fetch(`${process.env.REACT_APP_API_URL}/tasks`)
-        .then(response => response.json())
-        .then(data => {
-          setTasks(data);
-          localStorage.setItem(tasksCacheKey, JSON.stringify(data)); // Cache fetched tasks
-        })
-        .catch(error => console.error("Fetching tasks failed", error));
+      fetchFromAPI();
     }
   }, []);
 
-  const handleNewTaskSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const fetchFromAPI = () => {
+    fetch(`${process.env.REACT_APP_API_URL}/tasks`)
+      .then(response => response.json())
+      .then(tasksFromAPI => {
+        setTaskList(tasksFromAPI);
+        cacheTasks(tasksFromAPI);
+      })
+      .catch(error => console.error("Fetching tasks failed", error));
+  };
+
+  const cacheTasks = (tasks: Task[]) => {
+    localStorage.setItem(localStorageKey, JSON.stringify(tasks));
+  };
+
+  const handleTaskSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!newTaskTitle.trim()) return;
+    if (!newTaskInput.trim()) return;
 
     const newTask: Task = {
       id: Date.now(),
-      title: newTaskTitle,
+      title: newTaskInput,
       completed: false,
     };
 
-    const updatedTasks = [...tasks, newTask];
-    setTasks(updatedTasks);
-    setNewTaskTitle('');
+    const updatedTaskList = [...taskList, newTask];
+    setTaskList(updatedTaskList);
+    setNewTaskInput('');
 
-    // Update local storage (cache)
-    localStorage.setItem(tasksCacheKey, JSON.stringify(updatedTasks));
-
-    // For a real-world application, you'd also want to send this to your backend, e.g.:
-    // fetch(`${process.env.REACT_APP_API_URL}/tasks`, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(newTask),
-    // }).then(/* handle response */).catch(/* handle error */);
+    cacheTasks(updatedTaskList);
   };
 
   return (
     <div>
-      <h1>Task Management Application</h1>
-      <form onSubmit={handleNewTaskSubmit}>
+      <h1>Task Manager</h1>
+      <form onSubmit={handleTaskSubmit}>
         <input 
           type="text" 
-          value={newTaskTitle} 
-          onChange={(e) => setNewTaskTitle(e.target.value)} 
+          value={newTaskInput} 
+          onChange={(e) => setNewTaskInput(e.target.value)} 
           placeholder="Add a new task"
         />
         <button type="submit">Add Task</button>
       </form>
       <ul>
-        {tasks.map(task => (
+        {taskList.map(task => (
           <li key={task.id}>
             {task.title} - {task.completed ? "Done" : "Pending"}
           </li>
@@ -76,4 +76,4 @@ const App: React.FC<AppProps> = () => {
   );
 };
 
-export default App;
+export default TaskManagerApp;
