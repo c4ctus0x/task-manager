@@ -1,27 +1,26 @@
-import express, { Application, Request, Response, NextFunction } from 'express';
+import express, { Application, Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import mongoose from 'mongoose';
 import { config } from 'dotenv';
 
 config();
 
-interface Task {
+interface ITask {
     _id: mongoose.Types.ObjectId;
     name: string;
     description: string;
     completed: boolean;
 }
 
-interface TaskModel extends mongoose.Model<Task> {
-}
+interface ITaskModel extends mongoose.Model<ITask> {}
 
-const taskSchema = new mongoose.Schema<Task>({
+const TaskSchema = new mongoose.Schema<ITask>({
     name: { type: String, required: true },
     description: { type: String, required: true },
     completed: { type: Boolean, default: false }
 });
 
-const Task = mongoose.model<Task, TaskModel>('Task', taskSchema);
+const TaskModel = mongoose.model<ITask, ITaskModel>('Task', TaskSchema);
 
 const app: Application = express();
 const PORT = process.env.PORT || 3000;
@@ -31,25 +30,26 @@ app.use(bodyParser.json());
 mongoose.connect(process.env.MONGODB_URI || '', {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-}).then(() => console.log('Connected to MongoDB')).catch(err => console.log(err));
+})
+.then(() => console.log('Connected to MongoDB'))
+.catch(err => console.log(err));
 
 app.get('/tasks', async (req: Request, res: Response) => {
     try {
-        // Check if a search query parameter is provided
-        const { search } = req.query;
-        let query = {};
+        const searchTerm = req.query.search as string;
+        let filterCriteria = {};
 
-        if (search) {
-            query = {
+        if (searchTerm) {
+            filterCriteria = {
                 $or: [
-                    { name: { $regex: search, $options: 'i' } },
-                    { description: { $regex: search, $options: 'i' } }
+                    { name: { $regex: searchTerm, $options: 'i' } },
+                    { description: { $regex: searchTerm, $options: 'i' } }
                 ]
             };
         }
 
-        const tasks = await Task.find(query);
-        res.json(tasks);
+        const tasksFound = await TaskModel.find(filterCriteria);
+        res.json(tasksFound);
     } catch (error) {
         res.status(500).send(error);
     }
@@ -57,9 +57,9 @@ app.get('/tasks', async (req: Request, res: Response) => {
 
 app.post('/tasks', async (req: Request, res: Response) => {
     try {
-        const task = new Task(req.body);
-        await task.save();
-        res.status(201).json(task);
+        const newTask = new TaskModel(req.body);
+        await newTask.save();
+        res.status(201).json(newTask);
     } catch (error) {
         res.status(400).send(error);
     }
@@ -67,11 +67,13 @@ app.post('/tasks', async (req: Request, res: Response) => {
 
 app.put('/tasks/:id', async (req: Request, res: Response) => {
     try {
-        const updatedTask = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!updatedTask) {
+        const taskToUpdate = await TaskModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        
+        if (!taskToUpdate) {
             return res.status(404).send('Task not found');
         }
-        res.json(updatedTask);
+
+        res.json(taskToUpdate);
     } catch (error) {
         res.status(400).send(error);
     }
@@ -79,17 +81,19 @@ app.put('/tasks/:id', async (req: Request, res: Response) => {
 
 app.delete('/tasks/:id', async (req: Request, res: Response) => {
     try {
-        const task = await Task.findByIdAndDelete(req.params.id);
-        if (!task) {
+        const deletedTask = await TaskModel.findByIdAndDelete(req.params.id);
+        
+        if (!deletedTask) {
             return res.status(404).send('Task not found');
         }
+
         res.status(204).send();
     } catch (error) {
         res.status(500).send(error);
     }
 });
 
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+app.use((err: Error, req: Request, res: Response, next: Function) => {
     console.error(err.stack);
     res.status(500).send('Something broke!');
 });
