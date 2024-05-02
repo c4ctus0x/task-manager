@@ -12,14 +12,20 @@ const TaskManagerApp: React.FC<AppProps> = () => {
   const [taskList, setTaskList] = useState<Task[]>([]);
   const [newTaskInput, setNewTaskInput] = useState('');
   const localStorageKey = 'taskListStorage';
+  const cacheDuration = 1 * 60 * 60 * 1000;
 
   useEffect(() => {
     const tasksFromStorage = localStorage.getItem(localStorageKey);
-    if (tasksFromStorage) {
-      setTaskList(JSON.parse(tasksFromStorage));
-    } else {
-      fetchFromAPI();
+    const cacheTimestamp = localStorage.getItem(`${localStorageKey}:timestamp`);
+    const now = new Date().getTime();
+
+    if (tasksFromStorage && cacheTimestamp) {
+      if (now - parseInt(cacheTimestamp) < cacheDuration) {
+        setTaskList(JSON.parse(tasksFromStorage));
+        return;
+      }
     }
+    fetchFromAPI();
   }, []);
 
   const fetchFromAPI = () => {
@@ -33,7 +39,9 @@ const TaskManagerApp: React.FC<AppProps> = () => {
   };
 
   const cacheTasks = (tasks: Task[]) => {
+    const now = new Date().getTime();
     localStorage.setItem(localStorageKey, JSON.stringify(tasks));
+    localStorage.setItem(`${localStorageKey}:timestamp`, now.toString());
   };
 
   const handleTaskSubmit = (event: React.FormEvent<HTMLFormElement>) => {
