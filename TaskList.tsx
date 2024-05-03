@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, FC } from 'react';
 
 interface Task {
   id: string;
@@ -13,14 +13,15 @@ interface TaskListProps {
   onEdit: (id: string) => void;
 }
 
-const TaskList: React.FC<TaskListProps> = ({ tasks, onDelete, onEdit }) => {
+const TaskList: FC<TaskListProps> = ({ tasks, onDelete, onEdit }) => {
   const [error, setError] = useState<string | null>(null);
 
   const handleDelete = (id: string) => {
     try {
       onDelete(id);
-    } catch (error: any) {
-      console.error("Failed to delete task", error);
+    } catch (error) {
+      const errorObj = error as Error;
+      console.error("Failed to delete task", errorObj);
       setError("An error occurred when attempting to delete a task.");
     }
   };
@@ -28,8 +29,9 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onDelete, onEdit }) => {
   const handleEdit = (id: string) => {
     try {
       onEdit(id);
-    } catch (error: any) {
-      console.error("Failed to edit task", error);
+    } catch (error) {
+      const errorObj = error as Error;
+      console.error("Failed to edit task", errorObj);
       setError("An error occurred when attempting to edit a task.");
     }
   };
@@ -38,10 +40,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onDelete, onEdit }) => {
     <div className="task-list">
       {error && <p className="error">{error}</p>}
       {tasks.map((task) => (
-        <div
-          key={task.id}
-          className={`task-item ${task.status === 'completed' ? 'task-completed' : ''}`}
-        >
+        <div key={task.id} className={`task-item ${task.status === 'completed' ? 'task-completed' : ''}`}>
           <div className="task-details">
             <p>Description: {task.description}</p>
             <p>Due Date: {task.dueDate}</p>
