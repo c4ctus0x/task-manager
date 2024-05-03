@@ -6,7 +6,6 @@ interface ITaskFormState {
   priority: 'High' | 'Medium' | 'Low';
 }
 
-// Enhancing the component to handle errors
 interface IErrorState {
   hasError: boolean;
   message: string;
@@ -19,7 +18,6 @@ const TaskForm: React.FC<{ onSave: (task: ITaskFormState) => void }> = ({ onSave
     priority: 'Medium',
   });
 
-  // State for managing error handling
   const [error, setError] = useState<IErrorState>({ hasError: false, message: '' });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -34,20 +32,34 @@ const TaskForm: React.FC<{ onSave: (task: ITaskFormState) => void }> = ({ onSave
 
   const validateForm = (): boolean => {
     const { description, dueDate, priority } = formState;
-    const isValid = !!description && !!dueDate && !!priority;
 
-    if (!isValid) {
-      setError({ hasError: true, message: 'Please fill in all fields correctly.' });
+    if (!description) {
+      setError({ hasError: true, message: 'Description is required.' });
+      return false;
     }
-
-    return isValid;
+    if (!dueDate) {
+      setError({ hasError: true, message: 'Due Date is required.' });
+      return false;
+    }
+    
+    if (new Date(dueDate) < new Date()) {
+      setError({ hasError: true, message: 'Due Date must be in the future.' });
+      return false;
+    }
+    
+    if (!priority) {
+      setError({ hasError: true, message: 'Priority must be selected.' });
+      return false;
+    }
+    setError({ hasError: false, message: '' }); // Clear any previous errors if all checks pass
+    return true;
   };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
       onSave(formState);
-      setFormState({ description: '', dueDate: '', priority: 'Medium' });
+      setFormState({ description: '', dueDate: '', priority: 'Medium'}); // Reset form state upon successful save
     }
   };
 
