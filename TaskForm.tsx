@@ -1,4 +1,4 @@
-import React, { useState, FormEvent } from 'react';
+import React, { useState, useCallback, FormEvent } from 'react';
 
 interface ITaskFormState {
   description: string;
@@ -11,27 +11,29 @@ interface IErrorState {
   message: string;
 }
 
+const initialFormState: ITaskFormState = {
+  description: '',
+  dueDate: '',
+  priority: 'Medium',
+};
+
+const initialErrorState: IErrorState = { hasError: false, message: '' };
+
 const TaskForm: React.FC<{ onSave: (task: ITaskFormState) => void }> = ({ onSave }) => {
-  const [formState, setFormState] = useState<ITaskFormState>({
-    description: '',
-    dueDate: '',
-    priority: 'Medium',
-  });
+  const [formState, setFormState] = useState<ITaskFormState>(initialFormState);
+  const [error, setError] = useState<IErrorState>(initialErrorState);
 
-  const [error, setError] = useState<IErrorState>({ hasError: false, message: '' });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormState({ ...formState, [name]: value });
+    setFormState(prevState => ({ ...prevState, [name]: value }));
 
-    // Reset error on input change
     if (error.hasError) {
-      setError({ hasError: false, message: '' });
+      setError(initialErrorState);
     }
-  };
+  }, [error.hasError]);
 
   const validateForm = (): boolean => {
-    const { description, dueDate, priority } = formState;
+    const { description, dueDate } = formState;
 
     if (!description) {
       setError({ hasError: true, message: 'Description is required.' });
@@ -41,27 +43,22 @@ const TaskForm: React.FC<{ onSave: (task: ITaskFormState) => void }> = ({ onSave
       setError({ hasError: true, message: 'Due Date is required.' });
       return false;
     }
-    
     if (new Date(dueDate) < new Date()) {
       setError({ hasError: true, message: 'Due Date must be in the future.' });
       return false;
     }
-    
-    if (!priority) {
-      setError({ hasError: true, message: 'Priority must be selected.' });
-      return false;
-    }
-    setError({ hasError: false, message: '' }); // Clear any previous errors if all checks pass
+
+    setError(initialErrorState);
     return true;
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = useCallback((e: FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
       onSave(formState);
-      setFormState({ description: '', dueDate: '', priority: 'Medium'}); // Reset form state upon successful save
+      setFormState(initialFormState);
     }
-  };
+  }, [formState, onSave]);
 
   return (
     <form onSubmit={handleSubmit}>
