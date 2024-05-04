@@ -5,22 +5,22 @@ import { config } from 'dotenv';
 
 config();
 
-interface ITask {
+interface Task {
     _id: mongoose.Types.ObjectId;
     name: string;
     description: string;
     completed: boolean;
 }
 
-interface ITaskModel extends mongoose.Model<ITask> {}
+interface TaskModel extends mongoose.Model<Task> {}
 
-const TaskSchema = new mongoose.Schema<ITask>({
+const taskSchema = new mongoose.Schema<Task>({
     name: { type: String, required: true },
     description: { type: String, required: true },
     completed: { type: Boolean, default: false }
 });
 
-const TaskModel = mongoose.model<ITask, ITaskModel>('Task', TaskSchema);
+const Task = mongoose.model<Task, TaskModel>('Task', taskSchema);
 
 const app: Application = express();
 const PORT = process.env.PORT || 3000;
@@ -36,20 +36,20 @@ mongoose.connect(process.env.MONGODB_URI || '', {
 
 app.get('/tasks', async (req: Request, res: Response) => {
     try {
-        const searchTerm = req.query.search as string;
-        let filterCriteria = {};
+        const searchQuery = req.query.search as string;
+        let searchFilter = {};
 
-        if (searchTerm) {
-            filterCriteria = {
+        if (searchQuery) {
+            searchFilter = {
                 $or: [
-                    { name: { $regex: searchTerm, $options: 'i' } },
-                    { description: { $regex: searchTerm, $options: 'i' } }
+                    { name: { $regex: searchQuery, $options: 'i' } },
+                    { description: { $regex: searchQuery, $options: 'i' } }
                 ]
             };
         }
 
-        const tasksFound = await TaskModel.find(filterCriteria);
-        res.json(tasksFound);
+        const foundTasks = await Task.find(searchFilter);
+        res.json(foundTasks);
     } catch (error) {
         res.status(500).send(error);
     }
@@ -57,33 +57,33 @@ app.get('/tasks', async (req: Request, res: Response) => {
 
 app.post('/tasks', async (req: Request, res: Response) => {
     try {
-        const newTask = new TaskModel(req.body);
-        await newTask.save();
-        res.status(201).json(newTask);
+        const taskToCreate = new Task(req.body);
+        await taskToCreate.save();
+        res.status(201).json(taskToCreate);
     } catch (error) {
         res.status(400).send(error);
     }
 });
 
-app.put('/tasks/:id', async (req: Request, res: Response) => {
+app.put('/tasks/:taskId', async (req: Request, res: Response) => {
     try {
-        const taskToUpdate = await TaskModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const updatedTask = await Task.findByIdAndUpdate(req.params.taskId, req.body, { new: true });
         
-        if (!taskToUpdate) {
+        if (!updatedTask) {
             return res.status(404).send('Task not found');
         }
 
-        res.json(taskToUpdate);
+        res.json(updatedTask);
     } catch (error) {
         res.status(400).send(error);
     }
 });
 
-app.delete('/tasks/:id', async (req: Request, res: Response) => {
+app.delete('/tasks/:taskId', async (req: Request, res: Response) => {
     try {
-        const deletedTask = await TaskModel.findByIdAndDelete(req.params.id);
+        const taskToDelete = await Task.findByIdAndDelete(req.params.taskId);
         
-        if (!deletedTask) {
+        if (!taskToDelete) {
             return res.status(404).send('Task not found');
         }
 
