@@ -1,3 +1,4 @@
+// TaskList.tsx
 import React, { useState, FC } from 'react';
 
 interface Task {
@@ -9,24 +10,33 @@ interface Task {
 
 interface TaskListProps {
   tasks: Task[];
-  onDelete: (id: string) => void;
-  onEdit: (id: string) => void;
+  onDelete: (ids: string[]) => void; // Adjust to accept an array
+  onEdit: (id: string) => void; // Assuming edits happen one at a time for simplicity, but this can also be batched similarly
 }
 
 const TaskList: FC<TaskListProps> = ({ tasks, onDelete, onEdit }) => {
   const [error, setError] = useState<string | null>(null);
+  const [toBeDeleted, setToBeDeleted] = useState<string[]>([]); // Track IDs to be deleted
 
-  const handleDelete = (id: string) => {
+  // Batch delete operation
+  const triggerBatchDelete = () => {
     try {
-      onDelete(id);
+      onDelete(toBeDeleted);
+      setToBeDeleted([]); // Reset after successful deletion
     } catch (error) {
       const errorObj = error as Error;
-      console.error("Failed to delete task", errorObj);
-      setError("An error occurred when attempting to delete a task.");
+      console.error("Failed to batch delete tasks", errorObj);
+      setError("An error occurred when attempting to delete tasks.");
     }
   };
 
+  const handleDelete = (id: string) => {
+    setToBeDeleted([...toBeDeleted, id]); // Accumulate deletable IDs
+    // Consideration: Trigger batch delete here or allow manual trigger by the user
+  };
+
   const handleEdit = (id: string) => {
+    // Here, editing could potentially be batched in a similar manner if applicable
     try {
       onEdit(id);
     } catch (error) {
