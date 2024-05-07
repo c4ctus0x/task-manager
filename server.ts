@@ -1,31 +1,20 @@
 import express, { Application, Request, Response } from 'express';
-import bodyParser from 'body-parser';
 import mongoose from 'mongoose';
 import { config } from 'dotenv';
 
 config();
 
-interface Task {
-    _id: mongoose.Types.ObjectId;
-    name: string;
-    description: string;
-    completed: boolean;
-}
+const app: Application = express();
+const PORT = process.env.PORT || 3000;
 
-interface TaskModel extends mongoose.Model<Task> {}
-
-const taskSchema = new mongoose.Schema<Task>({
+// Schema and Model
+const taskSchema = new mongoose.Schema({
     name: { type: String, required: true },
     description: { type: String, required: true },
     completed: { type: Boolean, default: false }
 });
 
-const Task = mongoose.model<Task, TaskModel>('Task', taskSchema);
-
-const app: Application = express();
-const PORT = process.env.PORT || 3000;
-
-app.use(bodyParser.json());
+const Task = mongoose.model('Task', taskSchema);
 
 mongoose.connect(process.env.MONGODB_URI || '', {
     useNewUrlParser: true,
@@ -33,6 +22,8 @@ mongoose.connect(process.env.MONGODB_URI || '', {
 })
 .then(() => console.log('Connected to MongoDB'))
 .catch(err => console.log(err));
+
+app.use(express.json());
 
 app.get('/tasks', async (req: Request, res: Response) => {
     try {
@@ -93,6 +84,7 @@ app.delete('/tasks/:taskId', async (req: Request, res: Response) => {
     }
 });
 
+// Simplified error handling middleware
 app.use((err: Error, req: Request, res: Response, next: Function) => {
     console.error(err.stack);
     res.status(500).send('Something broke!');
