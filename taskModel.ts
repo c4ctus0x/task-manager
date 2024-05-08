@@ -1,17 +1,21 @@
-import mongoose, { Schema, Document, Model } from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose';
 
 interface ITask extends Document {
   description: string;
   dueDate: Date;
   priorityLevel: 'High' | 'Medium' | 'Low';
   isTaskCompleted: boolean;
-  markAsCompleted: () => Promise<ITask>; 
+  markAsCompleted: () => Promise<ITask>;
 }
 
 const TaskSchema: Schema<ITask> = new Schema({
   description: { type: String, required: true },
   dueDate: { type: Date, required: true },
-  priorityLevel: { type: String, required: true, enum: ['High', 'Medium', 'Low'] },
+  priorityLevel: {
+    type: String,
+    required: true,
+    enum: ['High', 'Medium', 'Low'],
+  },
   isTaskCompleted: { type: Boolean, required: true, default: false }
 });
 
